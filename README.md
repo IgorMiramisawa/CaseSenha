@@ -1,4 +1,4 @@
-# Password Validator API
+# Validador de Senha API
 
 Uma API web robusta e bem estruturada para validar senhas de acordo com critérios de segurança rigorosos.
 
@@ -66,29 +66,37 @@ A aplicação estará disponível em: `http://localhost:8080`
 
 ### Validar Senha
 
-**POST** `/api/v1/passwords/validate`
+**POST** `/api/v1/senhas/validar`
 
 #### Request
 
 ```json
 {
-  "password": "AbTp9!fok"
+  "senha": "AbTp9!fok"
 }
 ```
 
 #### Response (Válida)
 
 ```json
-{
-  "valid": true
-}
+true
 ```
 
 #### Response (Inválida)
 
 ```json
+false
+```
+
+#### Response (Erro)
+
+```json
 {
-  "valid": false
+  "status": 400,
+  "mensagem": "Corpo da requisição inválido",
+  "erro": "Required request body is missing",
+  "dataHora": "2023-10-01T12:00:00",
+  "caminho": "/api/v1/senhas/validar"
 }
 ```
 
@@ -96,14 +104,14 @@ A aplicação estará disponível em: `http://localhost:8080`
 
 ```bash
 # Senha válida
-curl -X POST http://localhost:8080/api/v1/passwords/validate \
+curl -X POST http://localhost:8080/api/v1/senhas/validar \
   -H "Content-Type: application/json" \
-  -d '{"password":"AbTp9!fok"}'
+  -d '{"senha":"AbTp9!fok"}'
 
 # Senha inválida (muito curta)
-curl -X POST http://localhost:8080/api/v1/passwords/validate \
+curl -X POST http://localhost:8080/api/v1/senhas/validar \
   -H "Content-Type: application/json" \
-  -d '{"password":"abc"}'
+  -d '{"senha":"abc"}'
 ```
 
 ## 🏗️ Arquitetura e Design
@@ -113,35 +121,56 @@ curl -X POST http://localhost:8080/api/v1/passwords/validate \
 ```
 src/
 ├── main/
-│   ├── java/com/casesanha/
-│   │   ├── PasswordValidatorApplication.java     # Classe principal Spring Boot
+│   ├── java/com/casesenha/
+│   │   ├── AplicacaoValidadorSenha.java          # Classe principal Spring Boot
 │   │   ├── config/
-│   │   │   └── ApplicationConfig.java            # Configuração de beans
+│   │   │   └── ConfiguracaoAplicacao.java        # Configuração de beans
 │   │   ├── controller/
-│   │   │   └── PasswordValidationController.java # Endpoints REST
+│   │   │   └── ControladorValidacaoSenha.java    # Endpoints REST
 │   │   ├── dto/
-│   │   │   ├── PasswordValidationRequest.java    # DTO de requisição
-│   │   │   └── PasswordValidationResponse.java   # DTO de resposta
+│   │   │   ├── RequisicaoValidacaoSenha.java     # DTO de requisição
+│   │   │   ├── RespostaErro.java                 # DTO de resposta de erro
+│   │   │   └── RespostaValidacaoSenha.java       # DTO de resposta (não usado)
+│   │   ├── exception/
+│   │   │   └── ControladorExcecaoGlobal.java     # Tratamento global de exceções
 │   │   ├── service/
-│   │   │   └── PasswordValidationService.java    # Lógica de negócio
+│   │   │   └── ServicoValidacaoSenha.java        # Lógica de negócio
 │   │   └── validator/
-│   │       ├── PasswordValidator.java            # Interface
-│   │       └── StrictPasswordValidator.java      # Implementação
+│   │       ├── ValidadorSenha.java               # Interface do validador
+│   │       ├── ValidadorSenhaComposto.java       # Implementação composta
+│   │       └── regra/
+│   │           ├── ExcecaoRegraValidacao.java     # Exceção customizada
+│   │           ├── RegraValidacao.java           # Interface de regra
+│   │           └── impl/
+│   │               ├── RegraComCaractereEspecial.java
+│   │               ├── RegraComDigito.java
+│   │               ├── RegraComLetraMaiuscula.java
+│   │               ├── RegraComLetraMinuscula.java
+│   │               ├── RegraSemCaracteresRepetidos.java
+│   │               ├── RegraSemEspacosEmBranco.java
+│   │               └── RegraTamanhoMinimo.java
 │   └── resources/
-│       └── application.properties                # Configurações
+│       └── application.properties                 # Configurações
 └── test/
-    └── java/com/casesanha/
+    └── java/com/casesenha/
+        ├── controller/
+        │   └── ControladorValidacaoSenhaIntegracaoTest.java
+        ├── service/
+        │   └── ServicoValidacaoSenhaTest.java
         ├── validator/
-        │   └── StrictPasswordValidatorTest.java  # Testes unitários
-        └── controller/
-            └── PasswordValidationControllerIntegrationTest.java
+        │   ├── ValidadorSenhaCompostoTest.java
+        │   └── regra/
+        │       └── impl/
+        │           └── RegrasValidacaoTest.java
+        └── resources/
+            └── application.properties
 ```
 
 ### Decisões de Design
 
-#### 1. **Padrão Strategy com Interface**
-   - **Decisão:** Usar uma interface `PasswordValidator` com implementação `StrictPasswordValidator`
-   - **Racional:** Permite trocar facilmente a estratégia de validação sem afetar o resto da aplicação. Favorece extensibilidade e testabilidade.
+#### 1. **Padrão Strategy com Interface e Regras Compostas**
+   - **Decisão:** Usar uma interface `ValidadorSenha` com implementação `ValidadorSenhaComposto` que combina múltiplas `RegraValidacao`
+   - **Racional:** Permite trocar facilmente a estratégia de validação sem afetar o resto da aplicação. Facilita adição/remoção de regras individualmente. Favorece extensibilidade e testabilidade.
    - **SOLID:** Dependency Inversion Principle (DIP) - depender de abstrações, não de implementações concretas
 
 #### 2. **Separação de Camadas**
@@ -157,9 +186,9 @@ src/
    - **Racional:** Torna dependências explícitas, facilita testes unitários e evita efeitos colaterais
    - **SOLID:** Dependency Inversion Principle
 
-#### 4. **Métodos Privados para Cada Validação**
-   - **Decisão:** Quebrar a lógica de validação em métodos menores e reutilizáveis
-   - **Racional:** Cada método tem uma responsabilidade clara, facilitando compreensão e manutenção
+#### 4. **Regras de Validação Individuais**
+   - **Decisão:** Quebrar a lógica de validação em regras menores e independentes
+   - **Racional:** Cada regra tem uma responsabilidade clara, facilitando compreensão, manutenção e testes
    - **SOLID:** Single Responsibility Principle
 
 #### 5. **DTOs para Request/Response**
@@ -170,55 +199,75 @@ src/
    - **Decisão:** Usar `/api/v1/` no endpoint
    - **Racional:** Permite evoluir a API sem quebrar clientes existentes
 
-#### 7. **Spring Boot com Maven**
+#### 7. **Tratamento Global de Exceções**
+   - **Decisão:** Usar `@RestControllerAdvice` para tratamento centralizado de erros
+   - **Racional:** Padroniza respostas de erro e evita duplicação de código
+
+#### 8. **Spring Boot com Maven**
    - **Decisão:** Usar Spring Boot e Maven
    - **Racional:** Framework maduro e com excelente suporte para criar APIs REST em Java. Maven é o padrão da indústria.
 
 ### Princípios SOLID Aplicados
 
 - **S**RP: Cada classe tem uma única responsabilidade
-- **O**CP: Aberto para extensão (novas implementações do `PasswordValidator`), fechado para modificação
+- **O**CP: Aberto para extensão (novas implementações do `ValidadorSenha` ou novas `RegraValidacao`), fechado para modificação
 - **L**SP: Implementações respeitam o contrato da interface
-- **I**SP: Interface segmentada (`PasswordValidator` é pequena e focada)
-- **D**IP: Depende de abstrações (`PasswordValidator`), não de implementações concretas
+- **I**SP: Interfaces segmentadas (`ValidadorSenha` e `RegraValidacao` são pequenas e focadas)
+- **D**IP: Depende de abstrações (`ValidadorSenha`, `RegraValidacao`), não de implementações concretas
 
 ## 🧪 Testes
 
 ### Testes Unitários
-Localizado em: `src/test/java/com/casesanha/validator/StrictPasswordValidatorTest.java`
+Localizado em: `src/test/java/com/casesenha/validator/regra/impl/RegrasValidacaoTest.java`
 
-Cobre todos os cenários de validação:
-- Senhas válidas
-- Senhas nulas
-- Senhas vazias
-- Senhas muito curtas
-- Falta de dígito
-- Falta de letra minúscula
-- Falta de letra maiúscula
-- Falta de caractere especial
-- Caracteres repetidos
-- Espaços em branco
+Cobre todas as regras de validação individualmente:
+- Senhas válidas e inválidas para cada regra
+- Casos extremos (null, vazio, etc.)
 - Todos os caracteres especiais válidos
+
+**Executar testes unitários das regras:**
+```bash
+mvn test -Dtest=RegrasValidacaoTest
+```
+
+### Testes do Validador Composto
+Localizado em: `src/test/java/com/casesenha/validator/ValidadorSenhaCompostoTest.java`
+
+Testa a combinação de regras:
+- Senhas válidas
+- Senhas inválidas (cada tipo de falha)
 - Exemplos do desafio
 
-**Executar testes unitários:**
+**Executar testes do validador composto:**
 ```bash
-mvn test -Dtest=StrictPasswordValidatorTest
+mvn test -Dtest=ValidadorSenhaCompostoTest
+```
+
+### Testes de Serviço
+Localizado em: `src/test/java/com/casesenha/service/ServicoValidacaoSenhaTest.java`
+
+Testa a lógica de negócio:
+- Integração com o validador
+- Logging de resultados
+
+**Executar testes de serviço:**
+```bash
+mvn test -Dtest=ServicoValidacaoSenhaTest
 ```
 
 ### Testes de Integração
-Localizado em: `src/test/java/com/casesanha/controller/PasswordValidationControllerIntegrationTest.java`
+Localizado em: `src/test/java/com/casesenha/controller/ControladorValidacaoSenhaIntegracaoTest.java`
 
 Testa a API completa:
 - Requisições com senhas válidas
 - Requisições com senhas inválidas
 - Tratamento de requisições nulas
-- Múltiplas senhas válidas e inválidas
+- JSON inválido
 - Códigos de status HTTP
 
 **Executar testes de integração:**
 ```bash
-mvn test -Dtest=PasswordValidationControllerIntegrationTest
+mvn test -Dtest=ControladorValidacaoSenhaIntegracaoTest
 ```
 
 **Executar todos os testes:**
@@ -229,10 +278,11 @@ mvn test
 ## 📊 Cobertura de Testes
 
 O projeto contém **24+ testes** cobrindo:
-- ✅ Todas as 7 regras de validação
-- ✅ Casos extremos (null, vazio, exatamente 9 caracteres)
-- ✅ Todos os caracteres especiais válidos
+- ✅ Todas as 7 regras de validação individualmente
+- ✅ Combinação de regras no validador composto
+- ✅ Lógica de negócio no serviço
 - ✅ Integração HTTP completa
+- ✅ Tratamento de erros
 - ✅ Exemplos fornecidos no desafio
 
 ## 🔧 Tecnologias Utilizadas
@@ -240,11 +290,14 @@ O projeto contém **24+ testes** cobrindo:
 | Tecnologia | Versão | Propósito |
 |-----------|---------|----------|
 | Java | 17 | Linguagem de programação |
-| Spring Boot | 3.1.5 | Framework web |
-| Spring Web | 3.1.5 | Criação de REST APIs |
+| Spring Boot | 3.3.5 | Framework web |
+| Spring Web | 3.3.5 | Criação de REST APIs |
 | JUnit 5 | - | Framework de testes |
 | AssertJ | - | Assertions mais legíveis |
+| Mockito | - | Mocking para testes |
+| Lombok | 1.18.34 | Redução de boilerplate |
 | Maven | 3.6+ | Gerenciador de dependências |
+| PITest | 1.15.8 | Testes de mutação |
 
 ## 📝 Premissas e Decisões
 
@@ -273,7 +326,7 @@ O projeto contém **24+ testes** cobrindo:
 - ✅ **Clean Code:** Nomes descritivos, métodos pequenos e focados, sem lógica complexa
 - ✅ **SOLID:** Todos os 5 princípios aplicados
 - ✅ **Documentação:** JavaDoc em todas as classes e métodos públicos
-- ✅ **Testes:** Cobertura abrangente com testes unitários e de integração
+- ✅ **Testes:** Cobertura abrangente com testes unitários, integração e mutação
 - ✅ **Extensibilidade:** Fácil adicionar novas regras ou estratégias de validação
 - ✅ **Manutenibilidade:** Código claro e bem organizado em camadas
 
@@ -286,6 +339,9 @@ O projeto contém **24+ testes** cobrindo:
 5. **Autenticação/Autorização:** Proteger endpoints com JWT ou OAuth2
 6. **Suporte Multilíngue:** Internacionalizar mensagens de erro
 7. **Cache:** Cachear resultados de validações (com cuidado de segurança)
+8. **Validação Assíncrona:** Processar validações pesadas de forma assíncrona
+9. **API de Consulta de Regras:** Endpoint para consultar quais regras estão ativas
+10. **Swagger/OpenAPI:** Documentação automática da API
 
 ## 📄 Licença
 
@@ -298,4 +354,3 @@ Solução desenvolvida para o desafio backend ITI Digital.
 ---
 
 **Desenvolvido com foco em qualidade, extensibilidade e manutenibilidade.**
-

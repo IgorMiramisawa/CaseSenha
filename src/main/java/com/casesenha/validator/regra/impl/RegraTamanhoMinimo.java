@@ -13,11 +13,6 @@ public class RegraTamanhoMinimo implements RegraValidacao {
         return senha.length() >= TAMANHO_MINIMO;
     }
 
-    @Override
-    public String descricao() {
-        return "Deve possuir no mínimo %d caracteres".formatted(TAMANHO_MINIMO);
-    }
-
     private void validarSenhaNaoNula(String senha) throws ExcecaoRegraValidacao {
         if (senha == null) {
             throw new ExcecaoRegraValidacao("Senha não pode ser nula");

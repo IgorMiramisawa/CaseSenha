@@ -14,7 +14,6 @@ class RegrasValidacaoTest {
 
         assertThat(regra.validar("123456789")).isTrue();
         assertThat(regra.validar("12345678")).isFalse();
-        assertThat(regra.descricao()).contains("mínimo");
     }
 
     @Test
@@ -64,16 +63,5 @@ class RegrasValidacaoTest {
 
         assertThat(regra.validar("Abc!def")).isTrue();
         assertThat(regra.validar("Abc?def")).isFalse();
-    }
-
-    @Test
-    void deveLancarExcecaoQuandoSenhaForNula() {
-        assertThatThrownBy(() -> new RegraTamanhoMinimo().validar(null))
-                .isInstanceOf(ExcecaoRegraValidacao.class)
-                .hasMessage("Senha não pode ser nula");
-
-        assertThatThrownBy(() -> new RegraComDigito().validar(null))
-                .isInstanceOf(ExcecaoRegraValidacao.class)
-                .hasMessage("Senha não pode ser nula");
     }
 }

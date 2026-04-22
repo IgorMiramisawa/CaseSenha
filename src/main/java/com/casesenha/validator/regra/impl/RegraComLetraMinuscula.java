@@ -7,18 +7,6 @@ public class RegraComLetraMinuscula implements RegraValidacao {
 
     @Override
     public boolean validar(String senha) throws ExcecaoRegraValidacao {
-        validarSenhaNaoNula(senha);
         return senha.chars().anyMatch(Character::isLowerCase);
-    }
-
-    @Override
-    public String descricao() {
-        return "Deve possuir ao menos uma letra minúscula";
-    }
-
-    private void validarSenhaNaoNula(String senha) throws ExcecaoRegraValidacao {
-        if (senha == null) {
-            throw new ExcecaoRegraValidacao("Senha não pode ser nula");
-        }
     }
 }

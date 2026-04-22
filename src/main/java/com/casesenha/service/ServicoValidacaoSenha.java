@@ -15,7 +15,6 @@ public class ServicoValidacaoSenha {
     private final ValidadorSenha validadorSenha;
 
     public boolean validar(String senha) {
-
         boolean valida = validadorSenha.ehValida(senha);
         log.info("Resultado da validação de senha: {}", valida ? "VÁLIDA" : "INVÁLIDA");
         return valida;

@@ -3,13 +3,7 @@ package com.casesenha.config;
 import com.casesenha.validator.ValidadorSenha;
 import com.casesenha.validator.ValidadorSenhaComposto;
 import com.casesenha.validator.regra.RegraValidacao;
-import com.casesenha.validator.regra.impl.RegraComCaractereEspecial;
-import com.casesenha.validator.regra.impl.RegraComDigito;
-import com.casesenha.validator.regra.impl.RegraComLetraMaiuscula;
-import com.casesenha.validator.regra.impl.RegraComLetraMinuscula;
-import com.casesenha.validator.regra.impl.RegraSemCaracteresRepetidos;
-import com.casesenha.validator.regra.impl.RegraSemEspacosEmBranco;
-import com.casesenha.validator.regra.impl.RegraTamanhoMinimo;
+import com.casesenha.validator.regra.impl.*;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
